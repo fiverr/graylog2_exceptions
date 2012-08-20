@@ -73,7 +73,8 @@ class Graylog2Exceptions
 
         env.each do |k, v|
           begin
-            opts[:full_message] << "#{k}: #{v.inspect}\n"
+            opts[:full_message] << "#{k}: #{v}\n"
+            #opts[:full_message] << "#{k}: #{v.inspect}\n"
           rescue
           end
         end
