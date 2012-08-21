@@ -4,14 +4,14 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = %q{graylog2_exceptions}
-  s.version = "1.3.0"
+  s.name = %q{friendlyfashion-graylog2_exceptions}
+  s.version = "1.3.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = ["Lennart Koopmann"]
-  s.date = %q{2011-03-15}
-  s.description = %q{A Rack middleware that sends every Exception as GELF message to your Graylog2 server}
-  s.email = %q{lennart@socketfeed.com}
+  s.authors       = ["Laurynas Butkus", "Tomas Didziokas", "Justas Janauskas", "Edvinas Bartkus"]
+  s.email         = ["laurynas.butkus@gmail.com", "tomas.did@gmail.com", "jjanauskas@gmail.com", "edvinas.bartkus@gmail.com"]
+  s.date          = %q{2012-08-21}
+  s.description   = %q{A Rack middleware that sends every Exception as GELF message to your Graylog2 server}
   s.extra_rdoc_files = [
     "README"
   ]
@@ -46,4 +46,3 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<gelf>, ["~> 1.3"])
   end
 end
-
