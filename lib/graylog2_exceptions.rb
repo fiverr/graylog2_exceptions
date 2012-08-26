@@ -62,22 +62,33 @@ class Graylog2Exceptions
       }
 
       if err.backtrace && err.backtrace.size > 0
-        opts[:full_message] = "Backtrace:\n" + err.backtrace.join("\n")
+        opts[:full_message] = "-------------------------------\n"
+        opts[:full_message] << "Backtrace:\n"
+        opts[:full_message] << "-------------------------------\n\n"
+        opts[:full_message] << err.backtrace.join("\n")
+        opts[:full_message] << "\n"
+
         opts[:file] = err.backtrace[0].split(":")[0]
         opts[:line] = err.backtrace[0].split(":")[1]
       end
 
       if env and env.size > 0
         opts[:full_message] ||= ""
-        opts[:full_message] << "\n\nEnvironment:\n"
+        opts[:full_message] << "-------------------------------\n"
+        opts[:full_message] << "Environment:\n"
+        opts[:full_message] << "-------------------------------\n\n"
 
         env.each do |k, v|
           begin
-            opts[:full_message] << "#{k}: #{v}\n"
+            opts[:full_message] << " * #{k}: #{v}\n"
             #opts[:full_message] << "#{k}: #{v.inspect}\n"
           rescue
           end
         end
+
+        opts[:full_message] << "\n"
+        opts[:full_message] << " * Process: #{$$}\n"
+        opts[:full_message] << " * Server: #{`hostname`.chomp}\n"
       end
       
       notifier.notify!(opts.merge(@extra_args))

@@ -137,13 +137,23 @@ class TestGraylog2Exceptions < Test::Unit::TestCase
     
     sent = Zlib::Inflate.inflate(c.send_to_graylog2(ex, data).join)
     json = JSON.parse(sent)
-    assert_equal('nil', json["_env_nil"])
-    assert_equal('"bar"', json["_env_str"])
-    assert_equal('123', json["_env_int"])
-    assert_equal('["a", 2]', json["_env_arr"])
-    assert_equal('{"a"=>1}', json["_env_hash"])
-    assert_match(/#<Object:.*>/, json["_env_obj"])
+
+    assert json["full_message"].include?('123')
+    assert json["full_message"].include?('bad')
+
     assert ! json.has_key?("_env_bad")
+  end
+
+  def test_send_pid_to_graylog
+    ex = build_exception
+
+    c = Graylog2Exceptions.new(nil)
+    env = { 'test' => 1 }
+    sent = Zlib::Inflate.inflate(c.send_to_graylog2(ex, env).join)
+    json = JSON.parse(sent)
+
+    assert json["full_message"].include?("Process: #{$$}")
+    assert json["full_message"].include?("Server: #{`hostname`.chomp}")
   end
 
   def test_invalid_port_detection
