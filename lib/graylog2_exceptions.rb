@@ -99,7 +99,7 @@ class Graylog2Exceptions
 
       if err.backtrace && err.backtrace.size > 0
         opts[:full_message] << ">> BACKTRACE <<\n"
-        opts[:full_message] << clean_stack err.backtrace
+        opts[:full_message] << clean_stack(err.backtrace)
         opts[:full_message] << "\n"
 
         opts[:file] = err.backtrace[0].split(":")[0]
