@@ -49,6 +49,30 @@ class Graylog2Exceptions
     response
   end
 
+  # Use a naive way to identify GEM_HOME_ROOT, in some setups, working with plain ENV['GEM_HOME']
+  def get_gem_home_root(arr)
+    gem_string = "/gems/"
+    ret = nil
+    arr.each do |line|
+      if line.include? gem_string
+        ret = line.split(gem_string)[0] + gem_string
+        break
+      end
+    end
+    ret
+  end
+
+  def clean_stack(backtrace)
+  gem_root_str = get_gem_home_root backtrace
+  arr = backtrace
+    if defined? gem_root_str
+      arr = backtrace.each do |line|
+          line.gsub! gem_root_str, "[GEM_HOME]/"
+      end
+    end
+    arr.join("\n")
+  end
+
   def send_to_graylog2(err, env=nil)
     begin
       notifier = GELF::Notifier.new(@args[:hostname], @args[:port], @args[:max_chunk_size])
@@ -61,11 +85,12 @@ class Graylog2Exceptions
           :host => @args[:local_app_name]
       }
 
+
       if err.backtrace && err.backtrace.size > 0
         opts[:full_message] = "-------------------------------\n"
         opts[:full_message] << "Backtrace:\n"
         opts[:full_message] << "-------------------------------\n\n"
-        opts[:full_message] << err.backtrace.join("\n")
+        opts[:full_message] << clean_stack err.backtrace
         opts[:full_message] << "\n"
 
         opts[:file] = err.backtrace[0].split(":")[0]
@@ -81,7 +106,6 @@ class Graylog2Exceptions
         env.each do |k, v|
           begin
             opts[:full_message] << " * #{k}: #{v}\n"
-            #opts[:full_message] << "#{k}: #{v.inspect}\n"
           rescue
           end
         end
