@@ -85,11 +85,20 @@ class Graylog2Exceptions
           :host => @args[:local_app_name]
       }
 
+      if env and env.size > 0
+        opts[:full_message] ||= ""
+        opts[:full_message] << ">> MAIN_ENV <<:\n"
+        env.each do |k, v|
+          continue unless ["HTTP_ORIGIN", "HTTP_REFERER", "CONTENT_TYPE", "HTTP_USER_AGENT", "REMOTE_ADDR", "REQUEST_URI"].includes? k
+          begin
+            opts[:full_message] << " * #{k}: #{v}\n"
+          rescue
+          end
+        end        
+      end
 
       if err.backtrace && err.backtrace.size > 0
-        opts[:full_message] = "-------------------------------\n"
-        opts[:full_message] << "Backtrace:\n"
-        opts[:full_message] << "-------------------------------\n\n"
+        opts[:full_message] << ">> BACKTRACE <<\n"
         opts[:full_message] << clean_stack err.backtrace
         opts[:full_message] << "\n"
 
@@ -98,10 +107,7 @@ class Graylog2Exceptions
       end
 
       if env and env.size > 0
-        opts[:full_message] ||= ""
-        opts[:full_message] << "-------------------------------\n"
-        opts[:full_message] << "Environment:\n"
-        opts[:full_message] << "-------------------------------\n\n"
+        opts[:full_message] << ">> ENVIRONMENT <<:\n"
 
         env.each do |k, v|
           begin
