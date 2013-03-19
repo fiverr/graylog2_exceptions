@@ -122,8 +122,8 @@ class Graylog2Exceptions
       end
       
       notifier.notify!(opts.merge(@extra_args))
-    rescue Exception => i_err
-      puts "Graylog2 Exception logger. Could not send message: " + i_err.message
+    rescue Exception => e
+      puts "Graylog2_Exception. Could not send message: #{e.message}, backtrace #{e.backtrace}"
     end
   end
 
