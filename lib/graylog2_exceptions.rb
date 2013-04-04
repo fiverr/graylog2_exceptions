@@ -80,13 +80,13 @@ class Graylog2Exceptions
       
       opts = {
           :short_message => err.message,
+          :full_message => "",
           :facility => @args[:facility],
           :level => @args[:level],
           :host => @args[:local_app_name]
       }
 
-      if env and env.size > 0
-        opts[:full_message] ||= ""
+      if env && env.size > 0
         opts[:full_message] << "   >>>> MAIN_ENV <<<<\n"
         env.each do |k, v|
           next unless ["HTTP_ORIGIN", "HTTP_REFERER", "CONTENT_TYPE", "HTTP_USER_AGENT", "REMOTE_ADDR", "REQUEST_URI"].include? k
