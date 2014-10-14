@@ -89,7 +89,7 @@ class Graylog2Exceptions
       if env && env.size > 0
         opts[:full_message] << "   >>>> MAIN_ENV <<<<\n"
         env.each do |k, v|
-          next unless ["HTTP_ORIGIN", "HTTP_REFERER", "CONTENT_TYPE", "HTTP_USER_AGENT", "REMOTE_ADDR", "REQUEST_URI"].include? k
+          next unless ["HTTP_ORIGIN", "HTTP_REFERER", "CONTENT_TYPE", "HTTP_USER_AGENT", "REMOTE_ADDR", "REQUEST_URI", "FIVERR_MESSSAGE"].include? k
           begin
             opts[:full_message] << " * #{k}: #{v}\n"
           rescue
