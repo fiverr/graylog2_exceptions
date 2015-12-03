@@ -106,12 +106,18 @@ class Graylog2Exceptions
         opts[:line] = err.backtrace[0].split(":")[1]
       end
 
-      if env and env.size > 0
+      if env && env.size > 0
+        if env["current_user"]
+          opts[:full_message] << "\n   >>>> CURRENT USER <<<<\n"
+          opts[:full_message] << " * CURRENT_USER: #{env["current_user"].inspect}\n\n"
+        end
+
         opts[:full_message] << "\n   >>>> ENVIRONMENT <<<<\n"
 
-        env.each do |k, v|
+        env.each do |env_key, env_value|
           begin
-            opts[:full_message] << " * #{k}: #{v}\n"
+            env_value = env_value
+            opts[:full_message] << " * #{env_key}: #{env_value}\n"
           rescue
           end
         end
@@ -122,7 +128,7 @@ class Graylog2Exceptions
       end
       
       notifier.notify!(opts.merge(@extra_args))
-    rescue Exception => e
+    rescue => e
       puts "Graylog2_Exception. Could not send message: #{e.message}, backtrace #{e.backtrace}"
     end
   end
