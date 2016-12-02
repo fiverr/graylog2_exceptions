@@ -98,7 +98,6 @@ class Graylog2Exceptions
           :level => log_level || @args[:level],
           :host => @args[:local_app_name]
       }
-      puts opts[:level]
 
       if env && env.size > 0
         opts[:full_message] << "   >>>> MAIN_ENV <<<<\n"
