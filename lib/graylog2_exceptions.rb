@@ -8,17 +8,17 @@ class Graylog2Exceptions
 
   def initialize(app, args = {})
     standard_args = {
-      :hostname => "localhost",
-      :port => 12201,
-      :local_app_name => Socket::gethostname,
-      :facility => 'graylog2_exceptions',
-      :max_chunk_size => 'LAN',
-      :level => Logger::ERROR,
-      :host => nil,
-      :short_message => nil,
-      :full_message => nil,
-      :file => nil,
-      :line => nil
+      hostname: "localhost",
+      port: 12201,
+      local_app_name: Socket::gethostname,
+      facility: 'graylog2_exceptions',
+      max_chunk_size: 'LAN',
+      level: Logger::ERROR,
+      host: nil,
+      short_message: nil,
+      full_message: nil,
+      file: nil,
+      line: nil
     }
 
     @args = standard_args.merge(args).reject {|k, v| v.nil? }
@@ -92,11 +92,11 @@ class Graylog2Exceptions
       notifier.collect_file_and_line = false
 
       opts = {
-          :short_message => err.message,
-          :full_message => "",
-          :facility => @args[:facility],
-          :level => log_level || @args[:level],
-          :host => @args[:local_app_name]
+          short_message: err.message,
+          full_message: "",
+          facility: @args[:facility],
+          level: log_level || @args[:level],
+          host: @args[:local_app_name]
       }
 
       if env && env.size > 0
