@@ -1,23 +1,24 @@
 require 'rubygems'
 require 'gelf'
 require 'socket'
+require 'logger'
 
 class Graylog2Exceptions
   attr_reader :args
 
   def initialize(app, args = {})
     standard_args = {
-      :hostname => "localhost",
-      :port => 12201,
-      :local_app_name => Socket::gethostname,
-      :facility => 'graylog2_exceptions',
-      :max_chunk_size => 'LAN',
-      :level => 3,
-      :host => nil,
-      :short_message => nil,
-      :full_message => nil,
-      :file => nil,
-      :line => nil
+      hostname: "localhost",
+      port: 12201,
+      local_app_name: Socket::gethostname,
+      facility: 'graylog2_exceptions',
+      max_chunk_size: 'LAN',
+      level: Logger::ERROR,
+      host: nil,
+      short_message: nil,
+      full_message: nil,
+      file: nil,
+      line: nil
     }
 
     @args = standard_args.merge(args).reject {|k, v| v.nil? }
@@ -63,8 +64,8 @@ class Graylog2Exceptions
   end
 
   def clean_stack(backtrace)
-  gem_root_str = get_gem_home_root backtrace
-  arr = backtrace
+    gem_root_str = get_gem_home_root backtrace
+    arr = backtrace
     if defined? gem_root_str
       arr = backtrace.each do |line|
           line.gsub! gem_root_str, "[GEM_HOME]/"
@@ -73,17 +74,29 @@ class Graylog2Exceptions
     arr.join("\n")
   end
 
-  def send_to_graylog2(err, env=nil)
+  def info(err, env=nil)
+    send_to_graylog2(err, env, Logger::INFO)
+  end
+
+  def warning(err, env=nil)
+    send_to_graylog2(err, env, Logger::WARN)
+  end
+
+  def error(err, env=nil)
+    send_to_graylog2(err, env, Logger::ERROR)
+  end
+
+  def send_to_graylog2(err, env=nil, log_level=nil)
     begin
       notifier = GELF::Notifier.new(@args[:hostname], @args[:port], @args[:max_chunk_size])
       notifier.collect_file_and_line = false
-      
+
       opts = {
-          :short_message => err.message,
-          :full_message => "",
-          :facility => @args[:facility],
-          :level => @args[:level],
-          :host => @args[:local_app_name]
+          short_message: err.message,
+          full_message: "",
+          facility: @args[:facility],
+          level: log_level || @args[:level],
+          host: @args[:local_app_name]
       }
 
       if env && env.size > 0
@@ -94,7 +107,7 @@ class Graylog2Exceptions
             opts[:full_message] << " * #{k}: #{v}\n"
           rescue
           end
-        end        
+        end
       end
 
       if err.backtrace && err.backtrace.size > 0
@@ -126,11 +139,10 @@ class Graylog2Exceptions
         opts[:full_message] << " * Process: #{$$}\n"
         opts[:full_message] << " * Server: #{`hostname`.chomp}\n"
       end
-      
+
       notifier.notify!(opts.merge(@extra_args))
     rescue => e
       puts "Graylog2_Exception. Could not send message: #{e.message}, backtrace #{e.backtrace}"
     end
   end
-
 end
