@@ -34,4 +34,6 @@ Gem::Specification.new do |s|
   ]
 
   s.add_runtime_dependency('gelf')
+  s.add_dependency('concurrent-ruby', '~> 1.0.0')
+  s.add_dependency('concurrent-ruby-ext', '~> 1.0.0')
 end
