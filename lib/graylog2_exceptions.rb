@@ -192,6 +192,6 @@ class Graylog2Exceptions
 
   def thread_pool
     # Lazy thread creation.
-    @pool ||= Concurrent::FixedThreadPool.new(1)
+    @pool ||= Concurrent::SingleThreadExecutor.new
   end
 end
