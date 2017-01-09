@@ -37,6 +37,25 @@ class Graylog2Exceptions
     dup._call(env)
   end
 
+  def _call(env)
+    begin
+      # Call the app we are monitoring
+      response = @app.call(env)
+    rescue => err
+      # An exception has been raised. Send to Graylog2!
+      send_to_graylog2(err, env)
+
+      # Raise the exception again to pass back to app.
+      raise
+    end
+
+    if env['rack.exception']
+      send_to_graylog2(env['rack.exception'], env)
+    end
+
+    response
+  end
+
   def send_to_graylog2(err, env = nil, log_level = nil)
     begin
 
@@ -114,25 +133,6 @@ class Graylog2Exceptions
   end
 
   private
-
-  def _call(env)
-    begin
-      # Call the app we are monitoring
-      response = @app.call(env)
-    rescue => err
-      # An exception has been raised. Send to Graylog2!
-      send_to_graylog2(err, env)
-
-      # Raise the exception again to pass back to app.
-      raise
-    end
-
-    if env['rack.exception']
-      send_to_graylog2(env['rack.exception'], env)
-    end
-
-    response
-  end
 
   # Use a naive way to identify GEM_HOME_ROOT, in some setups, working with plain ENV['GEM_HOME']
   def get_gem_home_root(arr)
