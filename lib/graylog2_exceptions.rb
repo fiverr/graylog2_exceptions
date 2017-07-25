@@ -109,7 +109,14 @@ class Graylog2Exceptions
       end
 
       # Actual message posting is done oby dedicated thread.
-      thread_pool.post { notifier.notify!(opts.merge(@extra_args)) }
+      thread_pool.post do
+        begin
+          notifier.notify!(opts.merge(@extra_args))
+        rescue StandardError => e
+          LocalLogger.logger.error "Graylog2Exceptions#send_to_graylog2 Could not send message: #{e.message}, backtrace #{e.backtrace}"
+        end
+      end
+
     rescue => e
       LocalLogger.logger.error "Graylog2Exceptions#send_to_graylog2 Could not send message: #{e.message}, backtrace #{e.backtrace}"
     end
