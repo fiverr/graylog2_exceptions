@@ -10,7 +10,9 @@ class Graylog2Exceptions
   attr_writer :env_ref
 
   FULL_MESSAGE_FIELDS = %w(HTTP_ORIGIN HTTP_REFERER CONTENT_TYPE HTTP_USER_AGENT REMOTE_ADDR REQUEST_URI FIVERR_MESSSAGE).freeze
-  BACKTRACE_DEPTH = 2
+  BACKTRACE_START = 4 # In case of no exception object, use the caller array starting from this element(1 based index)
+  NO_EXCEPTION = 'NO_EXCEPTION_GIVEN!'.freeze
+  FIVERR_MESSAGE = 'FIVERR_MESSSAGE'.freeze
 
   def initialize(app, args = {})
     standard_args = {
@@ -172,7 +174,7 @@ class Graylog2Exceptions
     begin
       formatted_exception = format_exception(klass, message, exception)
       env = get_env_ref
-      env['FIVERR_MESSSAGE'] = message
+      env[FIVERR_MESSAGE] = message
 
       send_to_graylog2(formatted_exception, env, level)
     rescue => e
@@ -181,10 +183,19 @@ class Graylog2Exceptions
   end
 
   def format_exception(klass, message, exception)
-    exp_data = exception.nil? ? '[NO STACK TRACE]' : "Attributes: #{exception}"
-    formatted_exception = Exception.new("Class: #{klass}\nMessage: #{message}.\n#{exp_data}")
-    formatted_exception.set_backtrace(caller.drop(BACKTRACE_DEPTH)) unless caller.nil?
+    data, backtrace = exception_attributes(exception)
+    formatted_exception = Exception.new("Class: #{klass}\nMessage: #{message}.\n#{data}")
+    formatted_exception.set_backtrace(backtrace)
     formatted_exception
+  end
+
+  def exception_attributes(exception)
+    case exception
+      when Exception
+        ["Attributes: #{exception}", exception.backtrace]
+      else
+        [NO_EXCEPTION, caller(BACKTRACE_START)]
+    end
   end
 
   def get_env_ref
