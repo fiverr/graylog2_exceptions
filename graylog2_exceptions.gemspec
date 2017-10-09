@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{friendlyfashion-graylog2_exceptions}
-  s.version = "1.3.2"
+  s.version = "1.8.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors       = ["Laurynas Butkus", "Tomas Didziokas", "Justas Janauskas", "Edvinas Bartkus"]
@@ -26,7 +26,6 @@ Gem::Specification.new do |s|
   ]
   s.homepage = %q{http://www.graylog2.org/}
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.7}
   s.summary = %q{Graylog2 exception notifier}
   s.test_files = [
     "test/helper.rb",

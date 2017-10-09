@@ -31,7 +31,9 @@ class Graylog2Exceptions
 
     @args = standard_args.merge(args).reject {|k, v| v.nil? }
     @extra_args = @args.reject {|k, v| standard_args.has_key?(k) }
+    @backtrace_cleaner = get_backtrace_cleaner
     @app = app
+
   end
 
   def call(env)
@@ -156,7 +158,7 @@ class Graylog2Exceptions
     ret
   end
 
-  def clean_stack(backtrace)
+  def clean(backtrace)
     gem_root_str = get_gem_home_root backtrace
     arr = backtrace
     if defined? gem_root_str
@@ -165,7 +167,20 @@ class Graylog2Exceptions
         line.gsub! gem_root_str, "[GEM_HOME]/"
       end
     end
-    arr.join("\n")
+    arr
+  end
+
+  def clean_stack(backtrace)
+    @backtrace_cleaner.clean(backtrace).join("\n")
+  end
+
+  def get_backtrace_cleaner
+    if defined? ActiveSupport::BacktraceCleaner
+      require_relative './backtrace_cleaner'
+      Fiverr::BacktraceCleaner.new
+    else
+      self
+    end
   end
 
   def send_with_level(klass, message, exception, level)
