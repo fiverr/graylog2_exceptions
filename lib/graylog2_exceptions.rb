@@ -43,13 +43,12 @@ class Graylog2Exceptions
 
   def _call(env)
     begin
-      # Call the app we are monitoring
       response = @app.call(env)
-    rescue => err
-      # An exception has been raised. Send to Graylog2!
+    rescue SyntaxError => err
       send_to_graylog2(err, env)
-
-      # Raise the exception again to pass back to app.
+      raise
+    rescue => err
+      send_to_graylog2(err, env)
       raise
     end
 
