@@ -174,8 +174,15 @@ class Graylog2Exceptions
   end
   
   def send_to_sentry(err)
-    Raven.capture_exception(err) unless err.is_a?(FiverrException)
-    Raven.capture_exception(err.original_exception) if err.original_exception
+    exit_words = ['key', 'secret', 'project']
+    return if exit_words.any? { |word| @sentry_url.include?(word) }
+    e = if !err is_a?(FiverrException)
+          err
+        elsif err.original_exception
+          err.original_exception
+        else
+          nil
+    Raven.capture_exception(e) if e
   end
 
   def clean(backtrace)
