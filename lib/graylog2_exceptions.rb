@@ -1,9 +1,16 @@
 require 'rubygems'
 require 'gelf'
+require 'raven/base'
 require 'socket'
 require 'logger'
 require 'concurrent'
 require_relative './local_logger'
+
+
+class FiverrException < Exception
+  attr_accessor :original_exception
+end
+
 
 class Graylog2Exceptions
   attr_reader :args
@@ -13,6 +20,7 @@ class Graylog2Exceptions
   BACKTRACE_START = 4 # In case of no exception object, use the caller array starting from this element(1 based index)
   NO_EXCEPTION = 'NO_EXCEPTION_GIVEN!'.freeze
   FIVERR_MESSAGE = 'FIVERR_MESSSAGE'.freeze
+  EXIT_WORDS = ['key', 'secret', 'project']
 
   def initialize(app, args = {})
     standard_args = {
@@ -26,13 +34,21 @@ class Graylog2Exceptions
       short_message: nil,
       full_message: nil,
       file: nil,
-      line: nil
+      line: nil,
+      sentry_key: 'key',
+      sentry_secret: 'secret',
+      sentry_project: 'project'
     }
 
     @args = standard_args.merge(args).reject {|k, v| v.nil? }
     @extra_args = @args.reject {|k, v| standard_args.has_key?(k) }
     @backtrace_cleaner = get_backtrace_cleaner
     @app = app
+    @sentry_url = "https://#{@args[:sentry_key]}:#{@args[:sentry_secret]}@sentry.io/#{@args[:sentry_project]}"
+    
+    Raven.configure do |config|
+        config.dsn = @sentry_url
+    end
 
   end
 
@@ -118,6 +134,7 @@ class Graylog2Exceptions
         rescue StandardError => e
           LocalLogger.logger.error "Graylog2Exceptions#send_to_graylog2 Could not send message: #{e.message}, backtrace #{e.backtrace}"
         end
+        send_to_sentry(err)      
       end
 
     rescue => e
@@ -155,6 +172,17 @@ class Graylog2Exceptions
       end
     end
     ret
+  end
+  
+  def send_to_sentry(err)
+    return if EXIT_WORDS.any? { |word| @sentry_url.include?(word) }
+    e = if !err is_a?(FiverrException)
+          err
+        elsif err.original_exception
+          err.original_exception
+        else
+          nil
+    Raven.capture_exception(e) if e
   end
 
   def clean(backtrace)
@@ -198,8 +226,9 @@ class Graylog2Exceptions
 
   def format_exception(klass, message, exception)
     data, backtrace = exception_attributes(exception)
-    formatted_exception = Exception.new("Class: #{klass}\nMessage: #{message}.\n#{data}")
+    formatted_exception = FiverrException.new("Class: #{klass}\nMessage: #{message}.\n#{data}")
     formatted_exception.set_backtrace(backtrace)
+    formatted_exception.original_exception = exception
     formatted_exception
   end
 
