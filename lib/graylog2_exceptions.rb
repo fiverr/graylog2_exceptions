@@ -20,6 +20,7 @@ class Graylog2Exceptions
   BACKTRACE_START = 4 # In case of no exception object, use the caller array starting from this element(1 based index)
   NO_EXCEPTION = 'NO_EXCEPTION_GIVEN!'.freeze
   FIVERR_MESSAGE = 'FIVERR_MESSSAGE'.freeze
+  EXIT_WORDS = ['key', 'secret', 'project']
 
   def initialize(app, args = {})
     standard_args = {
@@ -44,7 +45,7 @@ class Graylog2Exceptions
     @backtrace_cleaner = get_backtrace_cleaner
     @app = app
     @sentry_url = "https://#{@args[:sentry_key]}:#{@args[:sentry_secret]}@sentry.io/#{@args[:sentry_project]}"
-
+    
     Raven.configure do |config|
         config.dsn = @sentry_url
     end
@@ -174,8 +175,7 @@ class Graylog2Exceptions
   end
   
   def send_to_sentry(err)
-    exit_words = ['key', 'secret', 'project']
-    return if exit_words.any? { |word| @sentry_url.include?(word) }
+    return if EXIT_WORDS.any? { |word| @sentry_url.include?(word) }
     e = if !err is_a?(FiverrException)
           err
         elsif err.original_exception
