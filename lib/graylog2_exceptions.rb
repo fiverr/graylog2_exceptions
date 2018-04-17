@@ -60,69 +60,67 @@ class Graylog2Exceptions
   end
 
   def send_to_graylog2(err, env = nil, log_level = nil)
-    begin
+    opts = {
+        short_message: err.message,
+        full_message: "",
+        facility: @args[:facility],
+        level: log_level || @args[:level],
+        host: @args[:local_app_name]
+    }
 
-      opts = {
-          short_message: err.message,
-          full_message: "",
-          facility: @args[:facility],
-          level: log_level || @args[:level],
-          host: @args[:local_app_name]
-      }
-
-      if env && env.size > 0
-        opts[:full_message] << "   >>>> MAIN_ENV <<<<\n"
-        env.each do |k, v|
-          next unless FULL_MESSAGE_FIELDS.include? k
-          begin
-            opts[:full_message] << " * #{k}: #{v}\n"
-          rescue
-          end
-        end
-      end
-
-      if err && err.backtrace && err.backtrace.size > 0
-        opts[:full_message] << "\n   >>>> BACKTRACE <<<<\n"
-        opts[:full_message] << clean_stack(err.backtrace)
-        opts[:full_message] << "\n"
-
-        opts[:file] = err.backtrace[0].split(":")[0]
-        opts[:line] = err.backtrace[0].split(":")[1]
-      end
-
-      if env && env.size > 0
-        if env["current_user"]
-          opts[:full_message] << "\n   >>>> CURRENT USER <<<<\n"
-          opts[:full_message] << " * CURRENT_USER: #{env["current_user"].inspect}\n\n"
-        end
-
-        opts[:full_message] << "\n   >>>> ENVIRONMENT <<<<\n"
-
-        env.each do |env_key, env_value|
-          begin
-            env_value = env_value
-            opts[:full_message] << " * #{env_key}: #{env_value}\n"
-          rescue
-          end
-        end
-
-        opts[:full_message] << "\n"
-        opts[:full_message] << " * Process: #{$$}\n"
-        opts[:full_message] << " * Server: #{`hostname`.chomp}\n"
-      end
-
-      # Actual message posting is done oby dedicated thread.
-      thread_pool.post do
+    if env && env.size > 0
+      opts[:full_message] << "   >>>> MAIN_ENV <<<<\n"
+      env.each do |k, v|
+        next unless FULL_MESSAGE_FIELDS.include? k
         begin
-          notifier.notify!(opts.merge(@extra_args))
-        rescue StandardError => e
-          LocalLogger.logger.error "Graylog2Exceptions#send_to_graylog2 Could not send message: #{e.message}, backtrace #{e.backtrace}"
+          opts[:full_message] << " * #{k}: #{v}\n"
+        rescue
+        end
+      end
+    end
+
+    if err && err.backtrace && err.backtrace.size > 0
+      opts[:full_message] << "\n   >>>> BACKTRACE <<<<\n"
+      opts[:full_message] << clean_stack(err.backtrace)
+      opts[:full_message] << "\n"
+
+      opts[:file] = err.backtrace[0].split(":")[0]
+      opts[:line] = err.backtrace[0].split(":")[1]
+    end
+
+    if env && env.size > 0
+      if env["current_user"]
+        opts[:full_message] << "\n   >>>> CURRENT USER <<<<\n"
+        opts[:full_message] << " * CURRENT_USER: #{env["current_user"].inspect}\n\n"
+      end
+
+      opts[:full_message] << "\n   >>>> ENVIRONMENT <<<<\n"
+
+      env.each do |env_key, env_value|
+        begin
+          env_value = env_value
+          opts[:full_message] << " * #{env_key}: #{env_value}\n"
+        rescue
         end
       end
 
-    rescue => e
-      LocalLogger.logger.error "Graylog2Exceptions#send_to_graylog2 Could not send message: #{e.message}, backtrace #{e.backtrace}"
+      opts[:full_message] << "\n"
+      opts[:full_message] << " * Process: #{$$}\n"
+      opts[:full_message] << " * Server: #{`hostname`.chomp}\n"
     end
+
+    # Actual message posting is done oby dedicated thread.
+    notifier.notify!(opts.merge(@extra_args))
+    thread_pool.post do
+      begin
+        notifier.notify!(opts.merge(@extra_args))
+      rescue StandardError => e
+        LocalLogger.logger.error "Graylog2Exceptions#send_to_graylog2 Could not send message: #{e.message}, backtrace #{e.backtrace}"
+      end
+    end
+
+  rescue => e
+    LocalLogger.logger.error "Graylog2Exceptions#send_to_graylog2 Could not send message: #{e.message}, backtrace #{e.backtrace}"
   end
 
   def debug(klass, message, exception = nil)
@@ -220,10 +218,5 @@ class Graylog2Exceptions
     @gelf_notifier ||= GELF::Notifier.new(@args[:hostname], @args[:port], @args[:max_chunk_size])
     @gelf_notifier.collect_file_and_line = false
     @gelf_notifier
-  end
-
-  def thread_pool
-    # Lazy thread creation.
-    @pool ||= Concurrent::SingleThreadExecutor.new
   end
 end
