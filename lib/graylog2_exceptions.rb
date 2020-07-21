@@ -9,7 +9,7 @@ class Graylog2Exceptions
   attr_reader :args
   attr_writer :env_ref
 
-  FULL_MESSAGE_FIELDS = %w(HTTP_ORIGIN HTTP_REFERER CONTENT_TYPE HTTP_USER_AGENT REMOTE_ADDR REQUEST_URI FIVERR_MESSSAGE).freeze
+  FULL_MESSAGE_FIELDS = %w(HTTP_HOST HTTP_ORIGIN HTTP_REFERER REQUEST_METHOD CONTENT_TYPE HTTP_USER_AGENT REMOTE_ADDR REQUEST_URI FIVERR_MESSSAGE current_user page_ctx_id session_locale HTTP_X_CRAWLER_OR_WHITELISTED HTTP_X_PX_CTX).freeze
   BACKTRACE_START = 4 # In case of no exception object, use the caller array starting from this element(1 based index)
   NO_EXCEPTION = 'NO_EXCEPTION_GIVEN!'.freeze
   FIVERR_MESSAGE = 'FIVERR_MESSSAGE'.freeze
@@ -60,69 +60,71 @@ class Graylog2Exceptions
   end
 
   def send_to_graylog2(err, env = nil, log_level = nil)
-    begin
+    full_message = build_full_message(env, err)
 
-      opts = {
-          short_message: err.message,
-          full_message: "",
-          facility: @args[:facility],
-          level: log_level || @args[:level],
-          host: @args[:local_app_name]
-      }
+    log_message = {
+      full_message: full_message,
+      facility: @args[:facility],
+      host: @args[:local_app_name],
+      level: log_level || @args[:level],
+    }
 
-      if env && env.size > 0
-        opts[:full_message] << "   >>>> MAIN_ENV <<<<\n"
-        env.each do |k, v|
-          next unless FULL_MESSAGE_FIELDS.include? k
-          begin
-            opts[:full_message] << " * #{k}: #{v}\n"
-          rescue
-          end
-        end
-      end
-
-      if err && err.backtrace && err.backtrace.size > 0
-        opts[:full_message] << "\n   >>>> BACKTRACE <<<<\n"
-        opts[:full_message] << clean_stack(err.backtrace)
-        opts[:full_message] << "\n"
-
-        opts[:file] = err.backtrace[0].split(":")[0]
-        opts[:line] = err.backtrace[0].split(":")[1]
-      end
-
-      if env && env.size > 0
-        if env["current_user"]
-          opts[:full_message] << "\n   >>>> CURRENT USER <<<<\n"
-          opts[:full_message] << " * CURRENT_USER: #{env["current_user"].inspect}\n\n"
-        end
-
-        opts[:full_message] << "\n   >>>> ENVIRONMENT <<<<\n"
-
-        env.each do |env_key, env_value|
-          begin
-            env_value = env_value
-            opts[:full_message] << " * #{env_key}: #{env_value}\n"
-          rescue
-          end
-        end
-
-        opts[:full_message] << "\n"
-        opts[:full_message] << " * Process: #{$$}\n"
-        opts[:full_message] << " * Server: #{`hostname`.chomp}\n"
-      end
-
-      # Actual message posting is done oby dedicated thread.
-      thread_pool.post do
-        begin
-          notifier.notify!(opts.merge(@extra_args))
-        rescue StandardError => e
-          LocalLogger.logger.error "Graylog2Exceptions#send_to_graylog2 Could not send message: #{e.message}, backtrace #{e.backtrace}"
-        end
-      end
-
-    rescue => e
-      LocalLogger.logger.error "Graylog2Exceptions#send_to_graylog2 Could not send message: #{e.message}, backtrace #{e.backtrace}"
+    if err
+      log_message[:short_message] = err.message
+      log_message[:file], log_message[:line] = extract_file_line(err)
     end
+
+    graylog = log_message.merge(@extra_args)
+    notify_graylog!(graylog)
+  rescue => e
+    LocalLogger.logger.error "Graylog2Exceptions#send_to_graylog2: Failed to send graylog: #{e.message}, backtrace #{e.backtrace}"
+  end
+
+  def notify_graylog!(graylog)
+    # Actual message posting is done oby dedicated thread.
+    thread_pool.post do
+      begin
+        notifier.notify!(graylog)
+      rescue => e
+        LocalLogger.logger.error "Graylog2Exceptions#send_to_graylog2: Failed to notify graylog: #{e.message}, backtrace #{e.backtrace}"
+      end
+    end
+  end
+
+  def extract_file_line(err)
+    err.backtrace[0].split(":") rescue nil
+  end
+
+  def build_full_message(env, err)
+    full_message = ''
+
+    if env && env.size > 0
+      full_message << "   >>>> MAIN_ENV <<<<\n"
+      env.each do |k, v|
+        next unless FULL_MESSAGE_FIELDS.include?(k)
+
+        begin
+          value = k == 'current_user' ? v.id : v
+          full_message << " * #{k}: #{value}\n"
+        rescue => e
+          LocalLogger.logger.error "Graylog2Exceptions#build_full_message: Failed to parse env field '#{k}': #{e.message}"
+        end
+      end
+
+      full_message << " * Process: #{$$}\n"
+      full_message << " * Server: #{`hostname`.chomp}\n"
+    end
+
+    if err && err.backtrace && err.backtrace.size > 0
+      full_message << "\n   >>>> BACKTRACE <<<<\n"
+      full_message << clean_stack(err.backtrace)
+      full_message << "\n"
+    end
+
+    full_message
+  rescue => e
+    LocalLogger.logger.error "Graylog2Exceptions#build_full_message: Failed to build full_message: #{e.message}"
+    ''
   end
 
   def debug(klass, message, exception = nil)
@@ -192,7 +194,7 @@ class Graylog2Exceptions
 
       send_to_graylog2(formatted_exception, env, level)
     rescue => e
-      LocalLogger.logger.error "Graylog2Exceptions#send_with_level: #{e.inspect} and #{e.backtrace}"
+      LocalLogger.logger.error "Graylog2Exceptions#send_with_level: #{e.message}, #{e.backtrace}"
     end
   end
 
