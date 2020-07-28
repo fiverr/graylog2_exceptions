@@ -9,10 +9,10 @@ class Graylog2Exceptions
   attr_reader :args
   attr_writer :env_ref
 
-  FULL_MESSAGE_FIELDS = %w(HTTP_HOST HTTP_ORIGIN HTTP_REFERER REQUEST_METHOD CONTENT_TYPE HTTP_USER_AGENT REMOTE_ADDR REQUEST_URI FIVERR_MESSSAGE current_user page_ctx_id session_locale HTTP_X_CRAWLER_OR_WHITELISTED HTTP_X_PX_CTX).freeze
+  FULL_MESSAGE_FIELDS = %w(HTTP_HOST HTTP_ORIGIN HTTP_REFERER REQUEST_METHOD REQUEST_PATH CONTENT_TYPE HTTP_USER_AGENT REMOTE_ADDR REQUEST_URI FIVERR_MESSSAGE current_user page_ctx_id session_locale HTTP_X_CRAWLER_OR_WHITELISTED HTTP_X_PX_CTX).freeze
   BACKTRACE_START = 4 # In case of no exception object, use the caller array starting from this element(1 based index)
   NO_EXCEPTION = 'NO_EXCEPTION_GIVEN!'.freeze
-  FIVERR_MESSAGE = 'FIVERR_MESSSAGE'.freeze
+  FIVERR_MESSAGE = 'FIVERR_MESSAGE'.freeze
 
   def initialize(app, args = {})
     standard_args = {
