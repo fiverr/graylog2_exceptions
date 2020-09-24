@@ -104,7 +104,7 @@ class Graylog2Exceptions
         next unless FULL_MESSAGE_FIELDS.include?(k)
 
         begin
-          value = k == 'current_user' ? v.id : v
+          value = v && k == 'current_user' ? v.id : v
           full_message << " * #{k}: #{value}\n"
         rescue => e
           LocalLogger.logger.error "Graylog2Exceptions#build_full_message: Failed to parse env field '#{k}': #{e.message}"
