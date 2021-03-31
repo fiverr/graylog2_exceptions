@@ -9,10 +9,12 @@ class Graylog2Exceptions
   attr_reader :args
   attr_writer :env_ref
 
-  FULL_MESSAGE_FIELDS = %w(HTTP_HOST HTTP_ORIGIN HTTP_REFERER REQUEST_METHOD REQUEST_PATH CONTENT_TYPE HTTP_USER_AGENT REMOTE_ADDR REQUEST_URI FIVERR_MESSSAGE current_user page_ctx_id session_locale HTTP_X_OFFICE_IP HTTP_X_KNOWN_CRAWLER_CLASSIFICATION HTTP_X_PX_CTX).freeze
+  FULL_MESSAGE_FIELDS = %w(HTTP_HOST HTTP_ORIGIN HTTP_REFERER REQUEST_METHOD REQUEST_PATH CONTENT_TYPE HTTP_USER_AGENT REMOTE_ADDR REQUEST_URI FIVERR_MESSAGE current_user page_ctx_id session_locale HTTP_X_OFFICE_IP HTTP_X_KNOWN_CRAWLER_CLASSIFICATION HTTP_X_PX_CTX).freeze
   BACKTRACE_START = 4 # In case of no exception object, use the caller array starting from this element(1 based index)
   NO_EXCEPTION = 'NO_EXCEPTION_GIVEN!'.freeze
   FIVERR_MESSAGE = 'FIVERR_MESSAGE'.freeze
+  SERVER_HOSTNAME ||= ::Socket.gethostname.strip
+  PROCESS_ID ||= Process.pid
 
   def initialize(app, args = {})
     standard_args = {
@@ -111,8 +113,8 @@ class Graylog2Exceptions
         end
       end
 
-      full_message << " * Process: #{$$}\n"
-      full_message << " * Server: #{`hostname`.chomp}\n"
+      full_message << " * Process: #{PROCESS_ID}\n"
+      full_message << " * Server: #{SERVER_HOSTNAME}\n"
     end
 
     if err && err.backtrace && err.backtrace.size > 0
