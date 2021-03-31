@@ -14,7 +14,7 @@ class Graylog2Exceptions
   NO_EXCEPTION = 'NO_EXCEPTION_GIVEN!'.freeze
   FIVERR_MESSAGE = 'FIVERR_MESSAGE'.freeze
   SERVER_HOSTNAME ||= ::Socket.gethostname.strip
-  PROCESS_ID ||= Process.pid
+  PROCESS_ID ||= ::Process.pid
 
   def initialize(app, args = {})
     standard_args = {
