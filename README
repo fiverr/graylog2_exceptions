@@ -1,5 +1,7 @@
-Log all the Exceptions of your Rack application to a Graylog2 server.
+For Fiverr's usage, please use [the private fork of this repo](https://github.com/fiverr/graylog2_exceptions_private)
 
-Installation and configuration instructions in the Wiki.
+~Log all the Exceptions of your Rack application to a Graylog2 server.~
 
-More information about Graylog2: [[http://www.graylog2.org/]]
+~Installation and configuration instructions in the Wiki.~
+
+~More information about Graylog2: [[http://www.graylog2.org/]]~
